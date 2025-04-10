@@ -94,8 +94,8 @@ Merchant/Category Resolution:
 - "it" → specific merchant or category referenced earlier
 
 Transaction Type Clarification:
-- "spending" → "debit transactions"
-- "money in" → "credit transactions"
+- "spending" → "credit transactions"
+- "money in" → "debit transactions"
 
 Sorting/Limiting Clarification:
 - "top" → "highest by amount"
@@ -109,6 +109,8 @@ You create structured execution plans that transform natural language requests i
 
 ## Context
 Client ID: {client_id}
+Bank ID: {bank_id}
+Account ID: {account_id}
 Current Date & Time: {date_time}
 Rewritten Query: {rewritten_query}
 Table Schema: {schema}
@@ -143,7 +145,6 @@ You are a highly skilled SQL expert.
 Your role is to generate a single-lined and optimized SQL query that can be executed on a SQLite database based on the given context.
 
 ## Context
-Client ID: {client_id}
 Query: {rewritten_query}
 Table Schema: {schema}
 Action Plan: {action_plan}
@@ -156,7 +157,7 @@ Action Plan: {action_plan}
     - Example: use `WHERE description LIKE '%coffee%' OR category LIKE '%coffee%' OR merchant LIKE '%coffee%'`
 - Use `LIKE '%keyword%'` for fuzzy text matching.
 - Prefer `strftime()` or `date()` for date filtering.
-- Alias any aggregated result clearly (e.g., `SUM(debit) AS total_spent`).
+- Alias any aggregated result clearly (e.g., `SUM(debit) AS total_debited`, `SUM(credit) AS total_credited`).
 - Use `COALESCE()` where needed to avoid NULL-related errors.
 - Only return SELECT queries — never generate INSERT, DELETE, DROP, or UPDATE.
 """
