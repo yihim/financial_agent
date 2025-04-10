@@ -29,7 +29,7 @@ merchant:
     - Name of the merchant/vendor
 debit:
     - REAL
-    - Amount debited (negative cash flow)
+    - Amount debited
 credit:
     - REAL
-    - Amount credited (positive cash flow)"""
+    - Amount credited"""
