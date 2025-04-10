@@ -34,7 +34,9 @@ class TaskPlannerOutput(BaseModel):
     )
 
 
-def plan_task(llm, rewritten_query: str, client_id: int) -> Optional[TaskPlannerOutput]:
+def plan_task(
+    llm, rewritten_query: str, client_id: int, bank_id: int, account_id: int
+) -> Optional[TaskPlannerOutput]:
     prompt = ChatPromptTemplate.from_messages(("system", TASK_PLANNER_SYSTEM_PROMPT))
     chain = prompt | llm
 
@@ -42,6 +44,8 @@ def plan_task(llm, rewritten_query: str, client_id: int) -> Optional[TaskPlanner
         response = chain.invoke(
             {
                 "client_id": client_id,
+                "bank_id": bank_id,
+                "account_id": account_id,
                 "date_time": datetime.now(ZoneInfo("Asia/Kuala_Lumpur")).strftime(
                     "%Y-%m-%d %H:%M:%S"
                 ),
@@ -58,9 +62,17 @@ def plan_task(llm, rewritten_query: str, client_id: int) -> Optional[TaskPlanner
 if __name__ == "__main__":
     llm = load_llm()
     llm = llm.with_structured_output(TaskPlannerOutput)
-    client_id = 880
-    rewritten_query = "List the top 3 categories I spent most on July 2023"
-    response = plan_task(llm=llm, rewritten_query=rewritten_query, client_id=client_id)
+    client_id = 2
+    bank_id = 1
+    account_id = 1
+    rewritten_query = "List the top 3 categories I saved most on July 2023"
+    response = plan_task(
+        llm=llm,
+        rewritten_query=rewritten_query,
+        client_id=client_id,
+        bank_id=bank_id,
+        account_id=account_id,
+    )
     if response is not None:
         print(response.query_understanding)
         print(response.execution_plan)
