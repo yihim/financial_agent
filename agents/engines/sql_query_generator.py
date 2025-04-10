@@ -14,7 +14,7 @@ class SqlQueryGeneratorOutput(BaseModel):
 
 
 def generate_sql_query(
-    llm, rewritten_query: str, action_plan: List[SubTask], client_id: int
+    llm, rewritten_query: str, action_plan: List[SubTask]
 ) -> Optional[SqlQueryGeneratorOutput]:
     prompt = ChatPromptTemplate.from_messages(
         ("system", SQL_QUERY_GENERATOR_SYSTEM_PROMPT)
@@ -24,7 +24,6 @@ def generate_sql_query(
     try:
         response = chain.invoke(
             {
-                "client_id": client_id,
                 "rewritten_query": rewritten_query,
                 "schema": DB_TABLE_SCHEMA,
                 "action_plan": action_plan,
@@ -41,44 +40,41 @@ if __name__ == "__main__":
     os.chdir(root_dir)
     llm = load_llm()
     llm = llm.with_structured_output(SqlQueryGeneratorOutput)
-    client_id = 880
-    rewritten_query = "List the top 3 categories I spent most on July 2023"
+    rewritten_query = "List the top 3 categories I saved most on July 2023"
     action_plan = [
         SubTask(
             step="1",
             operation="FILTER",
-            description="Filter transactions to include only those for the specified client and within the date range of July 2023.",
-            fields_involved=["client_id", "transaction_date"],
-            conditions="client_id = 880 AND transaction_date >= '2023-07-01' AND transaction_date < '2023-08-01'",
+            description="Filter transactions to include only those from July 2023 for the specified client, bank, and account.",
+            fields_involved=["client_id", "bank_id", "account_id", "transaction_date"],
+            conditions="transaction_date >= '2023-07-01 00:00:00' AND transaction_date < '2023-08-01 00:00:00' AND client_id = 2 AND bank_id = 1 AND account_id = 1",
         ),
         SubTask(
             step="2",
             operation="AGGREGATE",
-            description="Group the filtered transactions by category and sum the debit amounts to calculate total spending per category.",
+            description="Aggregate the filtered transactions by category, summing the debit amounts to determine total savings per category.",
             fields_involved=["category", "debit"],
-            conditions="None",
+            conditions="Use the results from step 1",
         ),
         SubTask(
             step="3",
             operation="SORT",
-            description="Sort the aggregated results in descending order based on the total spending amount.",
-            fields_involved=["total_spending"],
-            conditions="None",
+            description="Sort the aggregated results in descending order based on the total savings calculated in step 2.",
+            fields_involved=["category", "total_savings"],
+            conditions="Sort by total_savings DESC",
         ),
         SubTask(
             step="4",
             operation="LIMIT",
-            description="Limit the results to the top 3 categories with the highest spending.",
-            fields_involved=["category", "total_spending"],
-            conditions="None",
+            description="Limit the results to the top 3 categories with the highest savings.",
+            fields_involved=["category", "total_savings"],
+            conditions="Limit results to 3",
         ),
     ]
-
     response = generate_sql_query(
         llm=llm,
         rewritten_query=rewritten_query,
         action_plan=action_plan,
-        client_id=client_id,
     )
     if response is not None:
         print(response.sql_query)

@@ -73,7 +73,7 @@ if __name__ == "__main__":
     db_path = root_dir / DB_FILE
     conn, cursor = connect_db(db_path=db_path)
     if conn and cursor:
-        sql_query = "SELECT category, SUM(debit) AS total_spent FROM transactions WHERE client_id = 880 AND transaction_date >= '2023-07-01' AND transaction_date < '2023-08-01' GROUP BY category ORDER BY total_spent DESC LIMIT 3;"
+        sql_query = "SELECT category, SUM(debit) AS total_savings FROM transactions WHERE transaction_date >= '2023-07-01' AND transaction_date < '2023-08-01' AND client_id = 2 AND bank_id = 1 AND account_id = 1 GROUP BY category ORDER BY total_savings DESC LIMIT 3;"
         results = execute_sql_query(conn=conn, cursor=cursor, query=sql_query)
         print(results)
 
