@@ -1,5 +1,9 @@
 from agents.utils.models import load_llm
-from agents.utils.db import connect_db, execute_sql_query, get_single_bank_and_account_ids
+from agents.utils.db import (
+    connect_db,
+    execute_sql_query,
+    get_single_bank_and_account_ids,
+)
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
 from langchain_core.runnables import RunnableConfig
@@ -24,17 +28,19 @@ import asyncio
 class AgentState(TypedDict):
     messages: List[Union[HumanMessage, AIMessage]]
     query: str
-    rewritten_query: str
-    database_results: List[Dict[str, Any]]
-    response_check_result: str
-    response_check_result_reasoning: str
     query_classified_result: str
     query_classified_reason: str
+    rewritten_query: str
     client_id: int
     bank_id: int
     account_id: int
     action_plan: List[Any]
+    query_understanding: str
+    expected_output_structure: str
     sql_query: str
+    database_results: List[Dict[str, Any]]
+    response_check_result: str
+    response_check_result_reasoning: str
     answer: str
 
 
@@ -91,13 +97,19 @@ def create_multi_agents(db_path: Path) -> StateGraph.compile:
         print(f"Query Understanding: {action_plan.query_understanding}")
         print(f"Action Plan: {action_plan.execution_plan}")
         print(f"Expected Output Structure: {action_plan.expected_output_structure}\n\n")
-        return {"action_plan": action_plan.execution_plan}
+        return {
+            "action_plan": action_plan.execution_plan,
+            "query_understanding": action_plan.query_understanding,
+            "expected_output_structure": action_plan.expected_output_structure,
+        }
 
     def execute_generate_sql_query(state: AgentState):
         sql_query = generate_sql_query(
             llm=llm.with_structured_output(SqlQueryGeneratorOutput),
             rewritten_query=state["rewritten_query"],
             action_plan=state["action_plan"],
+            query_understanding=state["query_understanding"],
+            expected_output_structure=state["expected_output_structure"],
             client_id=state["client_id"],
             bank_id=state["bank_id"],
             account_id=state["account_id"],
@@ -227,17 +239,19 @@ async def main():
         state = {
             "messages": session_messages,
             "query": query,
-            "rewritten_query": "",
-            "database_results": [{"abc": 123}],
-            "response_check_result": "",
-            "response_check_result_reasoning": "",
             "query_classified_result": "",
             "query_classified_reason": "",
+            "rewritten_query": "",
             "client_id": client_id,
             "account_id": account_id,
             "bank_id": bank_id,
             "action_plan": ["abc"],
+            "query_understanding": "",
+            "expected_output_structure": "",
             "sql_query": "",
+            "database_results": [{"abc": 123}],
+            "response_check_result": "",
+            "response_check_result_reasoning": "",
             "answer": "",
         }
 
