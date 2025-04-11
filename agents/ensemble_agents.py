@@ -220,7 +220,7 @@ async def main():
 
     client_id = 6
     results = get_single_bank_and_account_ids(client_id=client_id, db_path=db_path)
-    if results:
+    if isinstance(results, tuple):
         bank_id = results[0]
         account_id = results[1]
     else:

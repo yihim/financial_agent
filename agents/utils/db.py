@@ -34,6 +34,7 @@ def execute_sql_query(conn, cursor, query):
         formatted_results = []
 
     finally:
+        cursor.close()
         conn.close()
 
     return formatted_results
@@ -58,6 +59,7 @@ def get_table_schema(db_path: Path):
             print(f"Unexpected error occurred when executing 'get_table_schema': {e}")
 
         finally:
+            cursor.close()
             conn.close()
 
         return table_schema
@@ -70,6 +72,17 @@ def get_single_bank_and_account_ids(client_id: int, db_path: Path):
     conn, cursor = connect_db(db_path=db_path)
     if conn and cursor:
         try:
+            # First check if client exists
+            client_check_query = """
+                SELECT COUNT(*) FROM transactions WHERE client_id = ?
+            """
+            cursor.execute(client_check_query, (client_id,))
+            client_exists = cursor.fetchone()[0] > 0
+
+            if not client_exists:
+                return f"Client with ID {client_id} does not exist."
+
+            # If client exists, check banks and accounts
             query = """
                 SELECT 
                     MIN(bank_id) AS bank_id,
@@ -81,14 +94,18 @@ def get_single_bank_and_account_ids(client_id: int, db_path: Path):
             """
             cursor.execute(query, (client_id,))
             result = cursor.fetchone()
-            if result and result[2] == 1 and result[3] == 1:
+
+            if result[2] == 1 and result[3] == 1:
+                # Client has exactly one bank and one account
                 bank_id, account_id = result[0], result[1]
                 return bank_id, account_id
             else:
-                return None
+                # Client has multiple banks or accounts
+                return f"Client {client_id} has {result[2]} banks and {result[3]} accounts."
         finally:
             cursor.close()
             conn.close()
+    return "Database connection failed."
 
 
 if __name__ == "__main__":
@@ -102,10 +119,8 @@ if __name__ == "__main__":
         # results = execute_sql_query(conn=conn, cursor=cursor, query=sql_query)
         # print(results)
 
-        results = get_single_bank_and_account_ids(client_id=31, db_path=db_path)
-        if results:
-            print(results)
-        else:
-            print("Multiple banks and accounts.")
+        results = get_single_bank_and_account_ids(client_id=880, db_path=db_path)
+        print(results)
+        print(type(results))
 
     # print(get_table_schema(db_path=db_path))
