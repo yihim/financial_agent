@@ -66,7 +66,7 @@ def get_table_schema(db_path: Path):
 
 
 # Check whether a specific client having multiple banks and accounts
-def get_bank_and_account_ids(client_id: int, db_path: Path):
+def get_single_bank_and_account_ids(client_id: int, db_path: Path):
     conn, cursor = connect_db(db_path=db_path)
     if conn and cursor:
         try:
@@ -102,7 +102,7 @@ if __name__ == "__main__":
         # results = execute_sql_query(conn=conn, cursor=cursor, query=sql_query)
         # print(results)
 
-        results = get_bank_and_account_ids(client_id=31, db_path=db_path)
+        results = get_single_bank_and_account_ids(client_id=31, db_path=db_path)
         if results:
             print(results)
         else:

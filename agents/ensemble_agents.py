@@ -1,5 +1,5 @@
 from agents.utils.models import load_llm
-from agents.utils.db import connect_db, execute_sql_query, get_bank_and_account_ids
+from agents.utils.db import connect_db, execute_sql_query, get_single_bank_and_account_ids
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
 from langchain_core.runnables import RunnableConfig
@@ -207,7 +207,7 @@ async def main():
     session_messages = []
 
     client_id = 6
-    results = get_bank_and_account_ids(client_id=client_id, db_path=db_path)
+    results = get_single_bank_and_account_ids(client_id=client_id, db_path=db_path)
     if results:
         bank_id = results[0]
         account_id = results[1]
