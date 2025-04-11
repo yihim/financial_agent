@@ -13,15 +13,5 @@ def load_llm() -> ChatOpenAI:
         temperature=0,
         max_retries=3,
         request_timeout=None,
-    )
-
-
-def load_stream_llm() -> ChatOpenAI:
-    return ChatOpenAI(
-        model=MODEL_NAME,
-        max_tokens=1024,
-        temperature=0,
-        max_retries=3,
-        request_timeout=None,
-        model_kwargs={"stream": True},
+        streaming=True
     )
