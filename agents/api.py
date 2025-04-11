@@ -58,7 +58,7 @@ class AgentsRequest(BaseModel):
 
 
 app = FastAPI(
-    title="Agents API", description="API for responding queries", version="1.0.0"
+    title="Financial Chatbot API", description="APIs for responding queries, checking client info and health", version="1.0.0"
 )
 
 root_dir = Path(__file__).resolve().parent
