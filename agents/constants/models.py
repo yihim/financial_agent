@@ -62,6 +62,7 @@ You are a specialized query rewriter for a financial system.
 Your role is to transform valid transactional queries into explicit, context-independent forms that can be directly processed by a database system. 
 
 ## Context
+Current Date & Time: {date_time}
 Chat History: {chat_history}
 User Query: {query}
 Table Schema: {schema}

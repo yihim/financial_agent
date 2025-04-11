@@ -5,6 +5,8 @@ from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import HumanMessage, AIMessage
 from typing import List, Union, Optional
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 
 class QueryRewriterOutput(BaseModel):
@@ -24,7 +26,14 @@ def rewrite_query(
 
     try:
         response = chain.invoke(
-            {"query": query, "chat_history": chat_history, "schema": DB_TABLE_SCHEMA}
+            {
+                "date_time": datetime.now(ZoneInfo("Asia/Kuala_Lumpur")).strftime(
+                    "%Y-%m-%d %H:%M:%S"
+                ),
+                "query": query,
+                "chat_history": chat_history,
+                "schema": DB_TABLE_SCHEMA,
+            }
         )
         return response
     except Exception as e:
