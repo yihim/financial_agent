@@ -1,18 +1,19 @@
 from agents.utils.models import load_llm
 from agents.constants.models import CONVERSATIONAL_RESPONDER_SYSTEM_PROMPT
-from agents.constants.db import DB_TABLE_SCHEMA
 from langchain_core.prompts import ChatPromptTemplate
 from typing import List, Union
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_openai import ChatOpenAI
+from langchain_core.runnables import RunnableConfig
 
 
-def respond_conversational(
+async def respond_conversational(
     llm: ChatOpenAI,
     query: str,
     classified_result: str,
     classified_reason: str,
     chat_history: List[Union[HumanMessage, AIMessage]],
+    config: RunnableConfig,
 ) -> str:
     prompt = ChatPromptTemplate.from_messages(
         ("system", CONVERSATIONAL_RESPONDER_SYSTEM_PROMPT)
@@ -20,13 +21,14 @@ def respond_conversational(
     chain = prompt | llm
 
     try:
-        response = chain.invoke(
+        response = await chain.ainvoke(
             {
                 "query": query,
                 "classified_result": classified_result,
                 "classified_reason": classified_reason,
                 "chat_history": chat_history,
-            }
+            },
+            config=config,
         )
         return response.content
     except Exception as e:

@@ -3,7 +3,7 @@ from agents.constants.models import QUERY_ANALYZER_SYSTEM_PROMPT
 from agents.constants.db import DB_TABLE_SCHEMA
 from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
-from typing import Literal, Dict, List, Union, Optional
+from typing import Literal, List, Union, Optional
 from langchain_core.messages import HumanMessage, AIMessage
 
 

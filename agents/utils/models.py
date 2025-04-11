@@ -13,5 +13,5 @@ def load_llm() -> ChatOpenAI:
         temperature=0,
         max_retries=3,
         request_timeout=None,
-        streaming=True
+        streaming=True,
     )
