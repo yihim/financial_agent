@@ -25,7 +25,7 @@ def analyze_query(
 
     try:
         response = chain.invoke(
-            {"chat_history": "", "query": query, "schema": DB_TABLE_SCHEMA}
+            {"chat_history": chat_history, "query": query, "schema": DB_TABLE_SCHEMA}
         )
         return response
     except Exception as e:
