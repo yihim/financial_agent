@@ -92,7 +92,7 @@ def get_bank_and_account_ids(client_id: int, db_path: Path):
 
 
 if __name__ == "__main__":
-    root_dir = Path(__file__).resolve().parent.parent.parent
+    root_dir = Path(__file__).resolve().parent.parent
     # print(root_dir)
     os.chdir(root_dir)
     db_path = root_dir / DB_FILE

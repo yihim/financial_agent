@@ -21,10 +21,6 @@ import logging
 import asyncio
 
 
-root_dir = Path(__file__).resolve().parent.parent
-db_path = root_dir / DB_FILE
-
-
 class AgentState(TypedDict):
     messages: List[Union[HumanMessage, AIMessage]]
     query: str
@@ -42,7 +38,7 @@ class AgentState(TypedDict):
     answer: str
 
 
-def create_multi_agents() -> StateGraph.compile:
+def create_multi_agents(db_path: Path) -> StateGraph.compile:
     memory = MemorySaver()
 
     llm = load_llm()
@@ -203,7 +199,10 @@ async def main():
     session_id = uuid.uuid4().hex[:8]
     config = {"configurable": {"thread_id": session_id}}
 
-    graph = create_multi_agents()
+    root_dir = Path(__file__).resolve().parent
+    db_path = root_dir / DB_FILE
+
+    graph = create_multi_agents(db_path=db_path)
 
     session_messages = []
 
@@ -241,7 +240,6 @@ async def main():
             "sql_query": "",
             "answer": "",
         }
-
 
         full_response = ""
         async for msg, metadata in graph.astream(
