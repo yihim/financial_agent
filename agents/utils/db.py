@@ -65,6 +65,32 @@ def get_table_schema(db_path: Path):
         return table_schema
 
 
+# Check whether a specific client having multiple banks and accounts
+def get_bank_and_account_ids(client_id: int, db_path: Path):
+    conn, cursor = connect_db(db_path=db_path)
+    if conn and cursor:
+        try:
+            query = """
+                SELECT 
+                    MIN(bank_id) AS bank_id,
+                    MIN(account_id) AS account_id,
+                    COUNT(DISTINCT bank_id) AS bank_count,
+                    COUNT(DISTINCT account_id) AS account_count
+                FROM transactions
+                WHERE client_id = ?
+            """
+            cursor.execute(query, (client_id,))
+            result = cursor.fetchone()
+            if result and result[2] == 1 and result[3] == 1:
+                bank_id, account_id = result[0], result[1]
+                return bank_id, account_id
+            else:
+                return None
+        finally:
+            cursor.close()
+            conn.close()
+
+
 if __name__ == "__main__":
     root_dir = Path(__file__).resolve().parent.parent.parent
     # print(root_dir)
@@ -72,8 +98,14 @@ if __name__ == "__main__":
     db_path = root_dir / DB_FILE
     conn, cursor = connect_db(db_path=db_path)
     if conn and cursor:
-        sql_query = "SELECT category, SUM(debit) AS total_savings FROM transactions WHERE client_id = 2 AND bank_id = 1 AND account_id = 1 AND transaction_date >= '2023-07-01' AND transaction_date < '2023-08-01' GROUP BY category ORDER BY total_savings DESC LIMIT 3;"
-        results = execute_sql_query(conn=conn, cursor=cursor, query=sql_query)
-        print(results)
+        # sql_query = "SELECT category, SUM(debit) AS total_savings FROM transactions WHERE client_id = 2 AND bank_id = 1 AND account_id = 1 AND transaction_date >= '2023-07-01' AND transaction_date < '2023-08-01' GROUP BY category ORDER BY total_savings DESC LIMIT 3;"
+        # results = execute_sql_query(conn=conn, cursor=cursor, query=sql_query)
+        # print(results)
+
+        results = get_bank_and_account_ids(client_id=31, db_path=db_path)
+        if results:
+            print(results)
+        else:
+            print("Multiple banks and accounts.")
 
     # print(get_table_schema(db_path=db_path))
