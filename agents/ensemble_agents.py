@@ -1,5 +1,5 @@
 from agents.utils.models import load_llm
-from agents.utils.db import connect_db, execute_sql_query
+from agents.utils.db import connect_db, execute_sql_query, get_bank_and_account_ids
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
 from langchain_core.runnables import RunnableConfig
@@ -20,6 +20,10 @@ from agents.constants.db import DB_FILE
 from langchain_community.callbacks.manager import get_openai_callback
 import logging
 import asyncio
+
+
+root_dir = Path(__file__).resolve().parent.parent
+db_path = root_dir / DB_FILE
 
 
 class AgentState(TypedDict):
@@ -107,8 +111,6 @@ def create_multi_agents() -> StateGraph.compile:
         return {"sql_query": sql_query.sql_query}
 
     def execute_validate_sql_query(state: AgentState):
-        root_dir = Path(__file__).resolve().parent.parent
-        db_path = root_dir / DB_FILE
         conn, cursor = connect_db(db_path=db_path)
         database_results = []
         if conn and cursor:
@@ -206,9 +208,14 @@ async def main():
 
     session_messages = []
 
-    client_id = 880
-    bank_id = 144
-    account_id = 162
+    client_id = 6
+    results = get_bank_and_account_ids(client_id=client_id, db_path=db_path)
+    if results:
+        bank_id = results[0]
+        account_id = results[1]
+    else:
+        bank_id = 144
+        account_id = 162
 
     while True:
         query = input("Query: ").strip()
@@ -249,6 +256,7 @@ async def main():
 
             session_messages.append(AIMessage(content=full_response))
 
+            print()
             print(f"Total Tokens: {cb.total_tokens}")
             print(f"Prompt Tokens: {cb.prompt_tokens}")
             print(f"Completion Tokens: {cb.completion_tokens}")
