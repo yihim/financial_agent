@@ -44,8 +44,6 @@ def generate_sql_query(
 
 
 if __name__ == "__main__":
-    root_dir = Path(__file__).resolve().parent.parent
-    os.chdir(root_dir)
     llm = load_llm()
     llm = llm.with_structured_output(SqlQueryGeneratorOutput)
     client_id = 2
