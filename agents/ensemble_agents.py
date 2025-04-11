@@ -17,7 +17,6 @@ from agents.engines.response_checker import ResponseCheckerOutput, check_respons
 from agents.engines.conversational_responder import respond_conversational
 from pathlib import Path
 from agents.constants.db import DB_FILE
-from langchain_community.callbacks.manager import get_openai_callback
 import logging
 import asyncio
 
@@ -243,24 +242,17 @@ async def main():
             "answer": "",
         }
 
-        with get_openai_callback() as cb:
 
-            full_response = ""
-            async for msg, metadata in graph.astream(
-                input=state, config=config, stream_mode="messages"
-            ):
-                if msg.content:
-                    full_response += msg.content
-                    print(msg.content, end="", flush=True)
-            print()
+        full_response = ""
+        async for msg, metadata in graph.astream(
+            input=state, config=config, stream_mode="messages"
+        ):
+            if msg.content:
+                full_response += msg.content
+                print(msg.content, end="", flush=True)
+        print()
 
-            session_messages.append(AIMessage(content=full_response))
-
-            print()
-            print(f"Total Tokens: {cb.total_tokens}")
-            print(f"Prompt Tokens: {cb.prompt_tokens}")
-            print(f"Completion Tokens: {cb.completion_tokens}")
-            print(f"Total Cost (USD): ${cb.total_cost}\n")
+        session_messages.append(AIMessage(content=full_response))
 
 
 if __name__ == "__main__":

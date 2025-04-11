@@ -1,6 +1,5 @@
 from dotenv import load_dotenv
 from langchain_openai import ChatOpenAI
-
 from agents.constants.models import MODEL_NAME
 
 load_dotenv()
