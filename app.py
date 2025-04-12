@@ -6,6 +6,7 @@ import json
 import logging
 import sys
 import uuid
+import time
 
 # Configure root logger
 logging.basicConfig(
@@ -75,11 +76,8 @@ st.markdown(
 )
 
 # API endpoints
-# docker
 VALIDATION_API = "http://db:8070/api/validify/client-bank-account"
-GET_CLIENT_SINGLE_BANK_ACCOUNT_API = (
-    "http://db:8070/api/client/{client_id}/bank-account"
-)
+GET_CLIENT_SINGLE_BANK_ACCOUNT_API = "http://db:8070/api/client/{client_id}/bank-account"
 CHAT_API = "http://agents:8080/api/chat"
 
 
