@@ -1,5 +1,6 @@
 FROM continuumio/miniconda3:latest
 
+# Create app directory
 WORKDIR /app
 
 RUN apt-get update && \
@@ -10,10 +11,20 @@ RUN conda create -n db python=3.10 -y && \
     echo "conda activate db" >> ~/.bashrc
 SHELL ["bash", "-c"]
 
-COPY requirements.txt
+COPY requirements.txt .
 RUN conda run -n db pip install --no-cache-dir -r requirements.txt
+
+COPY . .
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1
 
 EXPOSE 8070
+
+# Create entrypoint script in the container
+RUN echo '#!/bin/bash' > /app/entrypoint.sh && \
+    echo 'exec conda run --no-capture-output -n db "$@"' >> /app/entrypoint.sh && \
+    chmod +x /app/entrypoint.sh
+
+# Set the entrypoint to our script
+ENTRYPOINT ["/app/entrypoint.sh"]
