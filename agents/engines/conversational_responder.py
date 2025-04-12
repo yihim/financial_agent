@@ -1,5 +1,5 @@
-from agents.utils.models import load_llm
-from agents.constants.models import CONVERSATIONAL_RESPONDER_SYSTEM_PROMPT
+from utils.models import load_llm
+from constants.models import CONVERSATIONAL_RESPONDER_SYSTEM_PROMPT
 from langchain_core.prompts import ChatPromptTemplate
 from typing import List, Union
 from langchain_core.messages import HumanMessage, AIMessage

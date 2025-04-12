@@ -1,6 +1,6 @@
-from agents.utils.models import load_llm
-from agents.constants.models import QUERY_ANALYZER_SYSTEM_PROMPT
-from agents.constants.db import DB_TABLE_SCHEMA
+from utils.models import load_llm
+from constants.models import QUERY_ANALYZER_SYSTEM_PROMPT
+from constants.db import DB_TABLE_SCHEMA
 from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
 from typing import Literal, List, Union, Optional

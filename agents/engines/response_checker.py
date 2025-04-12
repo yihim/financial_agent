@@ -1,5 +1,5 @@
-from agents.constants.models import RESPONSE_CHECKER_SYSTEM_PROMPT
-from agents.utils.models import load_llm
+from constants.models import RESPONSE_CHECKER_SYSTEM_PROMPT
+from utils.models import load_llm
 from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
 from typing import Optional, List, Dict, Any
