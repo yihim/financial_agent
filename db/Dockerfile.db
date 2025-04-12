@@ -1,0 +1,19 @@
+FROM continuumio/miniconda3:latest
+
+WORKDIR /app
+
+RUN apt-get update && \
+    apt-get install -y jq --no-install-recommends && \
+    rm -rf /var/lib/apt/lists/*
+
+RUN conda create -n db python=3.10 -y && \
+    echo "conda activate db" >> ~/.bashrc
+SHELL ["bash", "-c"]
+
+COPY requirements.txt
+RUN conda run -n db pip install --no-cache-dir -r requirements.txt
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
+
+EXPOSE 8070
