@@ -3,6 +3,18 @@ import requests
 from typing import List, Union
 from dataclasses import dataclass, asdict
 import json
+import logging
+import sys
+import uuid
+
+# Configure root logger
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
+)
+
+logger = logging.getLogger(__name__)
 
 # Configure the page
 st.set_page_config(page_title="Financial Assistant", page_icon="💰", layout="centered")
@@ -81,6 +93,8 @@ def validate_client_id(client_id: int):
             data = response.json()
             if data["status"] == "success":
                 st.session_state.validated = True
+                st.session_state.bank_id = data["bank_id"]
+                st.session_state.account_id = data["account_id"]
                 st.session_state.step = "chat"
             else:
                 st.session_state.step = "bank_account_input"
@@ -128,6 +142,8 @@ def stream_chat_response(
             "account_id": account_id,
             "thread_id": thread_id,
         }
+
+        logger.info(payload)
 
         # Make a streaming request
         with requests.post(
@@ -195,6 +211,9 @@ elif st.session_state.step == "bank_account_input":
 # Step 3: Chat Interface
 elif st.session_state.step == "chat":
     st.success("✅ You're successfully validated! Welcome to the chat.")
+
+    if not st.session_state.thread_id:
+        st.session_state.thread_id = uuid.uuid4().hex[:8]
 
     # Display chat history
     for message in st.session_state.messages:
