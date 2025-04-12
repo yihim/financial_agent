@@ -203,94 +203,20 @@ def create_multi_agents() -> StateGraph.compile:
     return app
 
 
-async def main():
-    import uuid
-
-    session_id = uuid.uuid4().hex[:8]
-    config = {"configurable": {"thread_id": session_id}}
+if __name__ == "__main__":
+    # Create graph visualization
+    from langchain_core.runnables.graph import MermaidDrawMethod
+    from IPython.display import Image
 
     graph = create_multi_agents()
-
-    session_messages = []
-
-    client_id = 6
-    validify_response = requests.post(
-        url="http://localhost:8070/api/clients/validify/bank-account",
-        json={"client_id": client_id},
-    )
-    validify_result = validify_response.json()
-    if validify_response.status_code == 200 and validify_result["status"] == "success":
-        single_bank_account_response = requests.get(
-            url=f"http://localhost:8070/api/clients/{client_id}/bank-account"
+    try:
+        img = Image(
+            graph.get_graph().draw_mermaid_png(
+                draw_method=MermaidDrawMethod.API,
+            )
         )
-        single_bank_account_result = single_bank_account_response.json()
-        if (
-            single_bank_account_response.status_code == 200
-            and single_bank_account_result["status"] == "success"
-        ):
-            bank_id = single_bank_account_result["bank_id"]
-            account_id = single_bank_account_result["account_id"]
-        else:
-            bank_id = 458
-            account_id = 523
 
-    while True:
-        query = input("Query: ").strip()
-
-        if query.lower() == "q":
-            print(graph.get_state(config).values)
-            break
-
-        session_messages.append(HumanMessage(content=query))
-
-        state = {
-            "messages": session_messages,
-            "query": query,
-            "query_classified_result": "",
-            "query_classified_reason": "",
-            "rewritten_query": "",
-            "client_id": client_id,
-            "account_id": account_id,
-            "bank_id": bank_id,
-            "action_plan": [],
-            "query_understanding": "",
-            "expected_output_structure": "",
-            "sql_query": "",
-            "database_results": [],
-            "response_check_result": "",
-            "response_check_result_reasoning": "",
-            "answer": "",
-        }
-
-        full_response = ""
-        async for msg, metadata in graph.astream(
-            input=state, config=config, stream_mode="messages"
-        ):
-            if msg.content:
-                full_response += msg.content
-                print(msg.content, end="", flush=True)
-        print()
-
-        session_messages.append(AIMessage(content=full_response))
-
-
-if __name__ == "__main__":
-    # Test graph
-    asyncio.run(main())
-
-    # # Create graph visualization
-    # from langchain_core.runnables.graph import MermaidDrawMethod
-    # from IPython.display import Image
-    #
-    # graph = create_multi_agents()
-    # try:
-    #     img = Image(
-    #         graph.get_graph().draw_mermaid_png(
-    #             draw_method=MermaidDrawMethod.API,
-    #         )
-    #     )
-    #
-    #     with open("graph_visualization.png", "wb") as f:
-    #         f.write(img.data)
-    # except Exception:
-    #     pass
+        with open("graph_visualization.png", "wb") as f:
+            f.write(img.data)
+    except Exception:
+        pass

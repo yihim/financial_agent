@@ -1,5 +1,5 @@
-DB_EXECUTE_SQL_QUERY_URL = "http://localhost:8070/api/db/execute-query" # local
-# DB_EXECUTE_SQL_QUERY_URL = "http://db:8070/api/db/execute-query" # docker
+# DB_EXECUTE_SQL_QUERY_URL = "http://localhost:8070/api/db/execute-query" # local
+DB_EXECUTE_SQL_QUERY_URL = "http://db:8070/api/db/execute-query" # docker
 
 DB_TABLE_SCHEMA = """Table: transactions
 Description: stores financial transaction records for clients across various banks and accounts.
