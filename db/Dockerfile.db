@@ -4,7 +4,7 @@ FROM continuumio/miniconda3:latest
 WORKDIR /app
 
 RUN apt-get update && \
-    apt-get install -y jq --no-install-recommends && \
+    apt-get install -y jq curl --no-install-recommends && \
     rm -rf /var/lib/apt/lists/*
 
 RUN conda create -n db python=3.10 -y && \
