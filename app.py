@@ -16,15 +16,65 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# Configure the page
-st.set_page_config(page_title="Financial Assistant", page_icon="💰", layout="centered")
+# Configure the page with a clean, minimalist theme
+st.set_page_config(
+    page_title="Finance Assistant",
+    page_icon="💼",
+    layout="centered",
+    initial_sidebar_state="collapsed",
+)
+
+# Custom CSS for minimalist styling
+st.markdown(
+    """
+    <style>
+    .main {
+        padding: 2rem;
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    h1 {
+        font-size: 2.2rem;
+        font-weight: 600;
+        margin-bottom: 2rem;
+        color: #3B82F6;
+    }
+    .stButton button {
+        background-color: #3B82F6;
+        color: white;
+        border-radius: 4px;
+        padding: 0.5rem 1.5rem;
+        border: none;
+        box-shadow: none;
+    }
+    .stButton button:hover {
+        background-color: #2563EB;
+    }
+    .success-box {
+        background-color: rgba(16, 185, 129, 0.15);
+        padding: 1rem;
+        border-radius: 4px;
+        border-left: 4px solid #10B981;
+        margin-bottom: 1.5rem;
+    }
+    .stTextInput, .stNumberInput {
+        margin-bottom: 1rem;
+    }
+    .chat-container {
+        margin-top: 1.5rem;
+    }
+    .step-header {
+        font-size: 1.2rem;
+        font-weight: 500;
+        margin-bottom: 1rem;
+        color: #60A5FA;
+    }
+    </style>
+""",
+    unsafe_allow_html=True,
+)
 
 # API endpoints
-# local
-# VALIDATION_API = "http://localhost:8070/api/validify/client-bank-account"
-# GET_CLIENT_SINGLE_BANK_ACCOUNT_API = "http://localhost:8070/api/client/{client_id}/bank-account"
-# CHAT_API = "http://localhost:8080/api/chat"
-
 # docker
 VALIDATION_API = "http://db:8070/api/validify/client-bank-account"
 GET_CLIENT_SINGLE_BANK_ACCOUNT_API = (
@@ -180,67 +230,111 @@ def stream_chat_response(
         return error_message
 
 
-# UI Flow
-st.title("💰 Financial Assistant")
+# UI Flow with minimal, clean design
+st.title("Finance Assistant")
+
+# Progress indicator
+if st.session_state.step == "client_input":
+    progress = 1
+elif st.session_state.step == "bank_account_input":
+    progress = 2
+else:
+    progress = 3
+
+if st.session_state.step != "chat":
+    st.progress(progress / 3)
 
 # Step 1: Client ID Input
 if st.session_state.step == "client_input":
-    client_id = st.number_input("Enter your Client ID", min_value=1, step=1)
-    if st.button("Continue"):
-        st.session_state.client_id = client_id
-        validate_client_id(client_id)
+    st.markdown(
+        '<p class="step-header">Step 1: Account Verification</p>',
+        unsafe_allow_html=True,
+    )
+
+    with st.container():
+        client_id = st.number_input(
+            "Enter your Client ID", min_value=1, step=1, key="client_id_input"
+        )
+        continue_btn = st.button("Continue", use_container_width=True)
+
+        if continue_btn:
+            st.session_state.client_id = client_id
+            with st.spinner("Verifying..."):
+                validate_client_id(client_id)
 
 # Step 2: Bank ID and Account ID Input
 elif st.session_state.step == "bank_account_input":
-    st.info(
-        "We couldn't find a default bank/account. Please provide the details below."
+    st.markdown(
+        '<p class="step-header">Step 2: Additional Information</p>',
+        unsafe_allow_html=True,
     )
 
-    # 🔒 Display the client ID (read-only)
+    st.info("Please provide your banking details")
+
+    # Display the client ID (read-only)
     st.text_input("Client ID", value=str(st.session_state.client_id), disabled=True)
 
     # Bank and account inputs
-    bank_id = st.number_input("Enter your Bank ID", min_value=1, step=1)
-    account_id = st.number_input("Enter your Account ID", min_value=1, step=1)
+    col1, col2 = st.columns(2)
+    with col1:
+        bank_id = st.number_input("Bank ID", min_value=1, step=1)
+    with col2:
+        account_id = st.number_input("Account ID", min_value=1, step=1)
 
-    if st.button("Continue"):
-        st.session_state.bank_id = bank_id
-        st.session_state.account_id = account_id
-        validate_full_details(st.session_state.client_id, bank_id, account_id)
+    continue_btn = st.button("Continue", use_container_width=True)
+    if continue_btn:
+        with st.spinner("Verifying details..."):
+            st.session_state.bank_id = bank_id
+            st.session_state.account_id = account_id
+            validate_full_details(st.session_state.client_id, bank_id, account_id)
 
 # Step 3: Chat Interface
 elif st.session_state.step == "chat":
-    st.success("✅ You're successfully validated! Welcome to the chat.")
+    # Display account info in a subtle way
+    client_info = f"Client ID: {st.session_state.client_id} • Bank ID: {st.session_state.bank_id} • Account ID: {st.session_state.account_id}"
+    st.markdown(
+        f"<div style='color: #6B7280; font-size: 0.8rem; margin-bottom: 1rem;'>{client_info}</div>",
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        "<div class='success-box'>✓ Account verified successfully</div>",
+        unsafe_allow_html=True,
+    )
 
     if not st.session_state.thread_id:
         st.session_state.thread_id = uuid.uuid4().hex[:8]
 
-    # Display chat history
+    # Display chat history with clean styling
+    st.markdown("<div class='chat-container'>", unsafe_allow_html=True)
     for message in st.session_state.messages:
-        with st.chat_message(message["role"]):
+        with st.chat_message(
+            message["role"], avatar="👤" if message["role"] == "user" else "💼"
+        ):
             st.write(message["content"])
+    st.markdown("</div>", unsafe_allow_html=True)
 
     # Add initial welcome message if chat is empty
     if not st.session_state.messages:
         welcome_msg = "How can I help you with your finances today?"
-        with st.chat_message("assistant"):
+        with st.chat_message("assistant", avatar="💼"):
             st.write(welcome_msg)
         st.session_state.messages.append({"role": "assistant", "content": welcome_msg})
         # Also add to dataclass-based chat history
         st.session_state.chat_history.append(AIMessage(content=welcome_msg))
 
     # Chat input
-    user_input = st.chat_input("Type your question...")
+    user_input = st.chat_input("Ask about your finances...")
     if user_input:
         # Display user message
-        with st.chat_message("user"):
+        with st.chat_message("user", avatar="👤"):
             st.write(user_input)
 
         # Add user message to messages history (for display)
         st.session_state.messages.append({"role": "user", "content": user_input})
 
         # Create a placeholder for the assistant's response
-        with st.chat_message("assistant"):
+        with st.chat_message("assistant", avatar="💼"):
             message_placeholder = st.empty()
             full_response = ""
 
@@ -260,7 +354,7 @@ elif st.session_state.step == "chat":
                 {"role": "assistant", "content": full_response}
             )
 
-# Show error if any
+# Show error if any, with minimal styling
 if st.session_state.error:
     st.error(st.session_state.error)
     st.session_state.error = ""
