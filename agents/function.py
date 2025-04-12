@@ -16,7 +16,6 @@ from langchain_core.messages import HumanMessage, AIMessage
 from typing import TypedDict, List, Union, Dict, Any, Literal
 import requests
 import logging
-import asyncio
 
 
 logger = logging.getLogger(__name__)
@@ -28,6 +27,7 @@ class AgentState(TypedDict):
     query_classified_result: str
     query_classified_reason: str
     rewritten_query: str
+    rewritten_query_reason: str
     client_id: int
     bank_id: int
     account_id: int
@@ -36,8 +36,6 @@ class AgentState(TypedDict):
     expected_output_structure: str
     sql_query: str
     database_results: List[Any]
-    response_check_result: str
-    response_check_result_reasoning: str
     answer: str
 
 
@@ -63,13 +61,11 @@ def create_multi_agents() -> StateGraph.compile:
             llm=llm.with_structured_output(QueryRewriterOutput),
             query=state["query"],
             chat_history=state["messages"],
-            rewritten_query=state["rewritten_query"],
-            response_check_result=state["response_check_result"],
-            response_check_result_reasoning=state["response_check_result_reasoning"],
+            rewritten_query=state["rewritten_query"]
         )
         logger.info(f"Rewritten Query: {rewrite_result.rewritten_query}")
         logger.info(f"Rewritten Reason: {rewrite_result.reasoning}\n\n")
-        return {"rewritten_query": rewrite_result.rewritten_query}
+        return {"rewritten_query": rewrite_result.rewritten_query, "rewritten_query_reason": rewrite_result.reasoning}
 
     def execute_plan_task(state: AgentState):
         action_plan = plan_task(

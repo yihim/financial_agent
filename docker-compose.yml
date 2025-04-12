@@ -21,6 +21,8 @@ services:
       dockerfile: Dockerfile.agents
     ports:
       - "8080:8080"
+    volumes:
+      - "./logs:/app/logs"
     env_file:
       - .env
     environment:

@@ -22,9 +22,7 @@ def rewrite_query(
     llm,
     query: str,
     chat_history: List[Union[HumanMessage, AIMessage]],
-    rewritten_query: str,
-    response_check_result: str,
-    response_check_result_reasoning: str,
+    rewritten_query: str
 ) -> Optional[QueryRewriterOutput]:
     prompt = ChatPromptTemplate.from_messages(("system", QUERY_REWRITER_SYSTEM_PROMPT))
     chain = prompt | llm
@@ -38,9 +36,7 @@ def rewrite_query(
                 "query": query,
                 "chat_history": chat_history,
                 "schema": DB_TABLE_SCHEMA,
-                "rewritten_query": rewritten_query,
-                "response_check_result": response_check_result,
-                "response_check_result_reasoning": response_check_result_reasoning,
+                "rewritten_query": rewritten_query
             }
         )
         return response
@@ -55,15 +51,11 @@ if __name__ == "__main__":
     query = "List the top 3 categories I spent most on last month"
     chat_history = [HumanMessage(content=query)]
     rewritten_query = ""
-    response_check_result = ""
-    response_check_result_reasoning = ""
     response = rewrite_query(
         llm=llm,
         query=query,
         chat_history=chat_history,
-        rewritten_query=rewritten_query,
-        response_check_result=response_check_result,
-        response_check_result_reasoning=response_check_result_reasoning,
+        rewritten_query=rewritten_query
     )
     if response is not None:
         print(response.rewritten_query)

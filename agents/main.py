@@ -1,3 +1,4 @@
+import os
 import warnings
 import logging
 from function import create_multi_agents
@@ -9,6 +10,8 @@ from pydantic import BaseModel
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
 import uvicorn
+from langchain_community.callbacks.manager import get_openai_callback
+from time import perf_counter
 
 warnings.filterwarnings("ignore")
 
@@ -18,6 +21,8 @@ logging.basicConfig(
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
     handlers=[logging.StreamHandler(sys.stdout)],
 )
+
+logger = logging.getLogger(__name__)
 
 
 # Function to decode messages
@@ -75,6 +80,7 @@ async def generate_stream(request: AgentsRequest) -> AsyncGenerator[str, None]:
         "query_classified_result": "",
         "query_classified_reason": "",
         "rewritten_query": "",
+        "rewritten_query_reason": "",
         "client_id": request.client_id,
         "account_id": request.account_id,
         "bank_id": request.bank_id,
@@ -83,16 +89,70 @@ async def generate_stream(request: AgentsRequest) -> AsyncGenerator[str, None]:
         "expected_output_structure": "",
         "sql_query": "",
         "database_results": [],
-        "response_check_result": "",
-        "response_check_result_reasoning": "",
         "answer": "",
     }
 
-    async for msg, metadata in graph.astream(
-        input=state, config=config, stream_mode="messages"
-    ):
-        if msg.content:
-            yield msg.content
+    start = perf_counter()
+
+    with get_openai_callback() as cb:
+
+        async for msg, metadata in graph.astream(
+            input=state, config=config, stream_mode="messages"
+        ):
+            if msg.content:
+                yield msg.content
+
+        logger.info(f"Total Tokens: {cb.total_tokens}")
+        logger.info(f"Prompt Tokens: {cb.prompt_tokens}")
+        logger.info(f"Completion Tokens: {cb.completion_tokens}")
+        logger.info(f"Total Cost (USD): ${cb.total_cost}\n")
+
+    logger.info(graph.get_state(config).values)
+
+    # Create log files per thread_id-client_id-bank_id-account_id
+    logs_dir = "./logs"
+    file_path = f"{logs_dir}/{request.thread_id}-{request.client_id}-{request.bank_id}-{request.account_id}.json"
+    final_state = graph.get_state(config).values
+    current_log = {
+        "user_query": final_state.get("query", ""),
+        "bot_response": final_state.get("answer", ""),
+        "time_taken": f"{perf_counter() - start:.2f} seconds",
+        "graph_state_info": {
+            "query_classified_result": final_state.get("query_classified_result", ""),
+            "query_classified_reason": final_state.get("query_classified_reason", ""),
+            "rewritten_query": final_state.get("rewritten_query", ""),
+            "rewritten_query_reason": final_state.get("rewritten_query_reason", ""),
+            "action_plan": final_state.get("action_plan", ""),
+            "query_understanding": final_state.get("query_understanding", ""),
+            "expected_output_structure": final_state.get(
+                "expected_output_structure", ""
+            ),
+            "sql_query": final_state.get("sql_query", ""),
+            "database_results": final_state.get("database_results", ""),
+        },
+        "openai_info": {
+            "total_tokens": cb.total_tokens,
+            "prompt_tokens": cb.prompt_tokens,
+            "completion_tokens": cb.prompt_tokens,
+            "total_cost": f"{cb.prompt_tokens} USD",
+        },
+    }
+
+    if os.path.exists(file_path):
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                logs = json.load(f)
+                if not isinstance(logs, list):
+                    logs = [logs]
+        except json.JSONDecodeError:
+            logs = []
+    else:
+        logs = []
+
+    logs.append(current_log)
+
+    with open(file_path, "w", encoding="utf-8") as f:
+        json.dump(logs, indent=4, fp=f)
 
 
 @app.post("/api/chat")

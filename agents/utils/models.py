@@ -13,4 +13,5 @@ def load_llm() -> ChatOpenAI:
         max_retries=3,
         request_timeout=None,
         streaming=True,
+        stream_usage=True
     )
