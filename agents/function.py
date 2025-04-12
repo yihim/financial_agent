@@ -8,7 +8,6 @@ from engines.sql_query_generator import (
     generate_sql_query,
 )
 from engines.response_crafter import craft_response
-from engines.response_checker import ResponseCheckerOutput, check_response
 from engines.conversational_responder import respond_conversational
 from langgraph.checkpoint.memory import MemorySaver
 from langgraph.graph import END, StateGraph
@@ -58,17 +57,6 @@ def create_multi_agents() -> StateGraph.compile:
             "query_classified_result": analyze_result.classified_result,
             "query_classified_reason": analyze_result.classified_reason,
         }
-
-    async def execute_respond_conversational(state: AgentState, config: RunnableConfig):
-        response = await respond_conversational(
-            llm=llm,
-            query=state["query"],
-            classified_result=state["query_classified_result"],
-            classified_reason=state["query_classified_reason"],
-            chat_history=state["messages"],
-            config=config,
-        )
-        return {"answer": response}
 
     def execute_rewrite_query(state: AgentState):
         rewrite_result = rewrite_query(
@@ -137,20 +125,16 @@ def create_multi_agents() -> StateGraph.compile:
         )
         return {"answer": answer}
 
-    def execute_check_response(state: AgentState):
-        check_result = check_response(
-            llm=llm.with_structured_output(ResponseCheckerOutput),
-            rewritten_query=state["rewritten_query"],
-            database_results=state["database_results"],
+    async def execute_respond_conversational(state: AgentState, config: RunnableConfig):
+        response = await respond_conversational(
+            llm=llm,
+            query=state["query"],
+            classified_result=state["query_classified_result"],
+            classified_reason=state["query_classified_reason"],
+            chat_history=state["messages"],
+            config=config,
         )
-        logger.info(
-            f"Check Result for '{state['database_results']}' is '{check_result.check_result}'"
-        )
-        logger.info(f"Reasoning: {check_result.reasoning}\n\n")
-        return {
-            "response_check_result": check_result.check_result,
-            "response_check_result_reasoning": check_result.reasoning,
-        }
+        return {"answer": response}
 
     def initial_routing(state: AgentState) -> Literal["rewrite", "conversational"]:
         if state["query_classified_result"] == "valid_transactional":
@@ -158,12 +142,6 @@ def create_multi_agents() -> StateGraph.compile:
         else:
             return "conversational"
 
-    def is_accurate_response(state: AgentState) -> Literal["craft_response", "rewrite"]:
-
-        if state["response_check_result"] == "yes":
-            return "craft_response"
-        else:
-            return "rewrite"
 
     workflow = StateGraph(AgentState)
 
@@ -174,7 +152,6 @@ def create_multi_agents() -> StateGraph.compile:
     workflow.add_node("sql_query_generator", execute_generate_sql_query)
     workflow.add_node("sql_query_validator", execute_validate_sql_query)
     workflow.add_node("response_crafter", execute_craft_response)
-    workflow.add_node("response_checker", execute_check_response)
 
     workflow.add_conditional_edges(
         "query_analyzer",
@@ -185,13 +162,7 @@ def create_multi_agents() -> StateGraph.compile:
     workflow.add_edge("query_rewriter", "task_planner")
     workflow.add_edge("task_planner", "sql_query_generator")
     workflow.add_edge("sql_query_generator", "sql_query_validator")
-    workflow.add_edge("sql_query_validator", "response_checker")
-
-    workflow.add_conditional_edges(
-        "response_checker",
-        is_accurate_response,
-        {"craft_response": "response_crafter", "rewrite": "query_rewriter"},
-    )
+    workflow.add_edge("sql_query_validator", "response_crafter")
 
     workflow.add_edge("conversational_responder", END)
     workflow.add_edge("response_crafter", END)
