@@ -41,7 +41,7 @@ class ExecuteQueryRequest(BaseModel):
     sql_query: str
 
 
-@app.post("/api/clients/validify/bank-account", response_model=Dict)
+@app.post("/api/validify/client-bank-account", response_model=Dict)
 def validify_client_bank_account(request: ValidifyIDRequest):
     return validify_client_bank_account_ids(
         db_path=DB_PATH,
@@ -56,7 +56,7 @@ def process_sql_query(request: ExecuteQueryRequest):
     return execute_sql_query(db_path=DB_PATH, query=request.sql_query)
 
 
-@app.get("/api/clients/{client_id}/bank-account", response_model=Dict)
+@app.get("/api/client/{client_id}/bank-account", response_model=Dict)
 def get_client_bank_account(client_id: int):
     return get_client_with_single_bank_and_account_id(
         db_path=DB_PATH, client_id=client_id
