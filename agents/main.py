@@ -122,19 +122,19 @@ async def generate_stream(request: AgentsRequest) -> AsyncGenerator[str, None]:
             "query_classified_reason": final_state.get("query_classified_reason", ""),
             "rewritten_query": final_state.get("rewritten_query", ""),
             "rewritten_query_reason": final_state.get("rewritten_query_reason", ""),
-            "action_plan": final_state.get("action_plan", ""),
+            "action_plan": str(final_state.get("action_plan", "")),
             "query_understanding": final_state.get("query_understanding", ""),
             "expected_output_structure": final_state.get(
                 "expected_output_structure", ""
             ),
             "sql_query": final_state.get("sql_query", ""),
-            "database_results": final_state.get("database_results", ""),
+            "database_results": str(final_state.get("database_results", "")),
         },
         "openai_info": {
             "total_tokens": cb.total_tokens,
             "prompt_tokens": cb.prompt_tokens,
             "completion_tokens": cb.prompt_tokens,
-            "total_cost": f"{cb.prompt_tokens} USD",
+            "total_cost": f"{cb.total_cost} USD",
         },
     }
 
