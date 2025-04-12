@@ -1,6 +1,6 @@
 import warnings
 import logging
-from ensemble_agents import create_multi_agents
+from function import create_multi_agents
 import sys
 from typing import List, Union, AsyncGenerator
 import json
@@ -8,9 +8,6 @@ from langchain_core.messages import HumanMessage, AIMessage
 from pydantic import BaseModel
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
-from pathlib import Path
-from agents.constants.db import DB_FILE
-from agents.utils.db import get_single_bank_and_account_ids
 import uvicorn
 
 warnings.filterwarnings("ignore")
@@ -58,12 +55,13 @@ class AgentsRequest(BaseModel):
 
 
 app = FastAPI(
-    title="Financial Chatbot API", description="APIs for responding queries, checking client info and health", version="1.0.0"
+    title="Financial Chatbot API",
+    description="APIs for responding queries and check health",
+    version="1.0.0",
 )
 
-root_dir = Path(__file__).resolve().parent
-db_path = root_dir / DB_FILE
-graph = create_multi_agents(db_path=db_path)
+
+graph = create_multi_agents()
 
 
 async def generate_stream(request: AgentsRequest) -> AsyncGenerator[str, None]:
@@ -80,11 +78,11 @@ async def generate_stream(request: AgentsRequest) -> AsyncGenerator[str, None]:
         "client_id": request.client_id,
         "account_id": request.account_id,
         "bank_id": request.bank_id,
-        "action_plan": ["abc"],
+        "action_plan": [],
         "query_understanding": "",
         "expected_output_structure": "",
         "sql_query": "",
-        "database_results": [{"abc": 123}],
+        "database_results": [],
         "response_check_result": "",
         "response_check_result_reasoning": "",
         "answer": "",
@@ -105,36 +103,10 @@ async def response_query(request: AgentsRequest):
     )
 
 
-@app.get("/api/clients/{client_id}/bank-account")
-def get_client_bank_account(client_id: int):
-    result = get_single_bank_and_account_ids(client_id=client_id, db_path=db_path)
-    # Handle the different return types
-    if isinstance(result, tuple) and len(result) == 2:
-        # Client has single bank and account
-        bank_id, account_id = result
-        return {
-            "status": "success",
-            "client_id": client_id,
-            "bank_id": bank_id,
-            "account_id": account_id,
-        }
-    elif isinstance(result, str):
-        # Error message returned
-        if "does not exist" in result:
-            # Client doesn't exist
-            return {"status": "error", "message": result}
-        else:
-            # Client has multiple banks/accounts
-            return {"status": "error", "message": result}
-    else:
-        # Unexpected error
-        return {"status": "error", "message": "An unexpected error occurred"}
-
-
 @app.get("/api/health")
 def health_check():
     return {"status": "healthy"}
 
 
 if __name__ == "__main__":
-    uvicorn.run("agents.api:app", host="0.0.0.0", port=8080, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=8080, reload=True)

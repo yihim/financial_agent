@@ -1,4 +1,4 @@
-DB_FILE = "transactions.db"
+DB_EXECUTE_SQL_QUERY_URL = "http://localhost:8070/api/db/execute-query"
 
 DB_TABLE_SCHEMA = """Table: transactions
 Description: stores financial transaction records for clients across various banks and accounts.

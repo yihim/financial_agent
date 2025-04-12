@@ -1,17 +1,8 @@
 from agents.utils.models import load_llm
-from agents.utils.db import (
-    connect_db,
-    execute_sql_query,
-    get_single_bank_and_account_ids,
-)
-from langgraph.checkpoint.memory import MemorySaver
-from langgraph.graph import END, StateGraph
-from langchain_core.runnables import RunnableConfig
-from typing import TypedDict, List, Union, Dict, Any, Literal
-from langchain_core.messages import HumanMessage, AIMessage
+from agents.constants.db import DB_EXECUTE_SQL_QUERY_URL
 from agents.engines.query_analyzer import QueryAnalyzerOutput, analyze_query
 from agents.engines.query_rewriter import QueryRewriterOutput, rewrite_query
-from agents.engines.task_planner import TaskPlannerOutput, plan_task, SubTask
+from agents.engines.task_planner import TaskPlannerOutput, plan_task
 from agents.engines.sql_query_generator import (
     SqlQueryGeneratorOutput,
     generate_sql_query,
@@ -19,10 +10,17 @@ from agents.engines.sql_query_generator import (
 from agents.engines.response_crafter import craft_response
 from agents.engines.response_checker import ResponseCheckerOutput, check_response
 from agents.engines.conversational_responder import respond_conversational
-from pathlib import Path
-from agents.constants.db import DB_FILE
+from langgraph.checkpoint.memory import MemorySaver
+from langgraph.graph import END, StateGraph
+from langchain_core.runnables import RunnableConfig
+from langchain_core.messages import HumanMessage, AIMessage
+from typing import TypedDict, List, Union, Dict, Any, Literal
+import requests
 import logging
 import asyncio
+
+
+logger = logging.getLogger(__name__)
 
 
 class AgentState(TypedDict):
@@ -38,25 +36,24 @@ class AgentState(TypedDict):
     query_understanding: str
     expected_output_structure: str
     sql_query: str
-    database_results: List[Dict[str, Any]]
+    database_results: List[Any]
     response_check_result: str
     response_check_result_reasoning: str
     answer: str
 
 
-def create_multi_agents(db_path: Path) -> StateGraph.compile:
+def create_multi_agents() -> StateGraph.compile:
     memory = MemorySaver()
 
     llm = load_llm()
 
     def execute_analyze_query(state: AgentState):
-        print(f"Chat History: {state['messages']}")
         analyze_result = analyze_query(
             llm=llm.with_structured_output(QueryAnalyzerOutput),
             query=state["query"],
             chat_history=state["messages"],
         )
-        print(f"Query Analyze Result: {analyze_result.classified_result}\n\n")
+        logger.info(f"Query Analyze Result: {analyze_result.classified_result}\n\n")
         return {
             "query_classified_result": analyze_result.classified_result,
             "query_classified_reason": analyze_result.classified_reason,
@@ -82,8 +79,8 @@ def create_multi_agents(db_path: Path) -> StateGraph.compile:
             response_check_result=state["response_check_result"],
             response_check_result_reasoning=state["response_check_result_reasoning"],
         )
-        print(f"Rewritten Query: {rewrite_result.rewritten_query}")
-        print(f"Rewritten Reason: {rewrite_result.reasoning}\n\n")
+        logger.info(f"Rewritten Query: {rewrite_result.rewritten_query}")
+        logger.info(f"Rewritten Reason: {rewrite_result.reasoning}\n\n")
         return {"rewritten_query": rewrite_result.rewritten_query}
 
     def execute_plan_task(state: AgentState):
@@ -94,9 +91,11 @@ def create_multi_agents(db_path: Path) -> StateGraph.compile:
             bank_id=state["bank_id"],
             account_id=state["account_id"],
         )
-        print(f"Query Understanding: {action_plan.query_understanding}")
-        print(f"Action Plan: {action_plan.execution_plan}")
-        print(f"Expected Output Structure: {action_plan.expected_output_structure}\n\n")
+        logger.info(f"Query Understanding: {action_plan.query_understanding}")
+        logger.info(f"Action Plan: {action_plan.execution_plan}")
+        logger.info(
+            f"Expected Output Structure: {action_plan.expected_output_structure}\n\n"
+        )
         return {
             "action_plan": action_plan.execution_plan,
             "query_understanding": action_plan.query_understanding,
@@ -114,21 +113,20 @@ def create_multi_agents(db_path: Path) -> StateGraph.compile:
             bank_id=state["bank_id"],
             account_id=state["account_id"],
         )
-        print(f"SQL Query: {sql_query.sql_query}\n\n")
+        logger.info(f"SQL Query: {sql_query.sql_query}\n\n")
         return {"sql_query": sql_query.sql_query}
 
     def execute_validate_sql_query(state: AgentState):
-        conn, cursor = connect_db(db_path=db_path)
-        database_results = []
-        if conn and cursor:
-            database_results = execute_sql_query(
-                conn=conn, cursor=cursor, query=state["sql_query"]
-            )
-            print(f"Database Results: {database_results}\n\n")
-            return {"database_results": database_results}
+        db_result = []
+        db_response = requests.post(
+            url=DB_EXECUTE_SQL_QUERY_URL, json={"sql_query": state["sql_query"]}
+        )
+        if db_response.status_code == 200 and db_response.json()["status"] == "success":
+            db_result = db_response.json()["formatted_results"]
+            logger.info(f"Database Results: {db_result}")
+            return {"database_results": db_result}
         else:
-            print(f"Database Results: {database_results}\n\n")
-            return {"database_results": database_results}
+            return {"database_results": db_result}
 
     async def execute_craft_response(state: AgentState, config: RunnableConfig):
         answer = await craft_response(
@@ -145,10 +143,10 @@ def create_multi_agents(db_path: Path) -> StateGraph.compile:
             rewritten_query=state["rewritten_query"],
             database_results=state["database_results"],
         )
-        print(
+        logger.info(
             f"Check Result for '{state['database_results']}' is '{check_result.check_result}'"
         )
-        print(f"Reasoning: {check_result.reasoning}\n\n")
+        logger.info(f"Reasoning: {check_result.reasoning}\n\n")
         return {
             "response_check_result": check_result.check_result,
             "response_check_result_reasoning": check_result.reasoning,
@@ -211,21 +209,30 @@ async def main():
     session_id = uuid.uuid4().hex[:8]
     config = {"configurable": {"thread_id": session_id}}
 
-    root_dir = Path(__file__).resolve().parent
-    db_path = root_dir / DB_FILE
-
-    graph = create_multi_agents(db_path=db_path)
+    graph = create_multi_agents()
 
     session_messages = []
 
     client_id = 6
-    results = get_single_bank_and_account_ids(client_id=client_id, db_path=db_path)
-    if isinstance(results, tuple):
-        bank_id = results[0]
-        account_id = results[1]
-    else:
-        bank_id = 144
-        account_id = 162
+    validify_response = requests.post(
+        url="http://localhost:8070/api/clients/validify/bank-account",
+        json={"client_id": client_id},
+    )
+    validify_result = validify_response.json()
+    if validify_response.status_code == 200 and validify_result["status"] == "success":
+        single_bank_account_response = requests.get(
+            url=f"http://localhost:8070/api/clients/{client_id}/bank-account"
+        )
+        single_bank_account_result = single_bank_account_response.json()
+        if (
+            single_bank_account_response.status_code == 200
+            and single_bank_account_result["status"] == "success"
+        ):
+            bank_id = single_bank_account_result["bank_id"]
+            account_id = single_bank_account_result["account_id"]
+        else:
+            bank_id = 458
+            account_id = 523
 
     while True:
         query = input("Query: ").strip()
@@ -245,11 +252,11 @@ async def main():
             "client_id": client_id,
             "account_id": account_id,
             "bank_id": bank_id,
-            "action_plan": ["abc"],
+            "action_plan": [],
             "query_understanding": "",
             "expected_output_structure": "",
             "sql_query": "",
-            "database_results": [{"abc": 123}],
+            "database_results": [],
             "response_check_result": "",
             "response_check_result_reasoning": "",
             "answer": "",
