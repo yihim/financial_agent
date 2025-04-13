@@ -5,10 +5,8 @@ A multi-agent financial system that answers user queries with their financial tr
 
 ---
 
-<div style="text-align:center;">
-    <h2>Agents Architecture</h2>
-    <img src="./assets/graph_visualization.png" alt="Graph Structure">
-</div>
+## **Agents Architecture**
+<img src="./assets/graph_visualization.png" alt="Graph Structure" width="350"/>
 
 ---
 
