@@ -1,7 +1,7 @@
 # **Financial Agent**
 A multi-agent financial system that answers user queries with their financial transactions.
 
-**Main Model :- **gpt-4o-mini**
+**Main Model :- gpt-4o-mini**
 
 ---
 
