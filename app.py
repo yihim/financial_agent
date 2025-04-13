@@ -6,7 +6,6 @@ import json
 import logging
 import sys
 import uuid
-import time
 
 # Configure root logger
 logging.basicConfig(
@@ -17,7 +16,7 @@ logging.basicConfig(
 
 logger = logging.getLogger(__name__)
 
-# Configure the page with a clean, minimalist theme
+# Set the page with a simple theme
 st.set_page_config(
     page_title="Finance Assistant",
     page_icon="💼",
@@ -25,7 +24,7 @@ st.set_page_config(
     initial_sidebar_state="collapsed",
 )
 
-# Custom CSS for minimalist styling
+# Custom CSS for simplicity styling
 st.markdown(
     """
     <style>
@@ -81,7 +80,7 @@ GET_CLIENT_SINGLE_BANK_ACCOUNT_API = "http://db:8070/api/client/{client_id}/bank
 CHAT_API = "http://agents:8080/api/chat"
 
 
-# Define message classes
+# Define AI and human message classes
 @dataclass
 class BaseMessage:
     content: str
@@ -102,13 +101,13 @@ class AIMessage(BaseMessage):
     type: str = "ai"
 
 
-# Function to encode messages
+# To encode chat history for sending to CHAT_API
 def encode_messages(messages: List[Union[HumanMessage, AIMessage]]) -> str:
     serializable = [asdict(msg) for msg in messages]
     return json.dumps(serializable)
 
 
-# Initialize session state
+# Initialize session states
 if "validated" not in st.session_state:
     st.session_state.validated = False
 if "client_id" not in st.session_state:
@@ -129,9 +128,10 @@ if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
 
-# Define functions
+# To validify client id and check if validated client id having only one bank and one account
 def validate_client_id(client_id: int):
     try:
+        # Validify the client id
         response = requests.post(VALIDATION_API, json={"client_id": client_id})
         data = response.json()
         if data["status"] == "success":
@@ -140,11 +140,14 @@ def validate_client_id(client_id: int):
             )
             data = response.json()
             if data["status"] == "success":
+                # If the user having only one bank and one account,
+                # then set the retrieved ids as default and direct to chat interface
                 st.session_state.validated = True
                 st.session_state.bank_id = data["bank_id"]
                 st.session_state.account_id = data["account_id"]
                 st.session_state.step = "chat"
             else:
+                # Else, require user to key in preferred bank and account ids
                 st.session_state.step = "bank_account_input"
             st.rerun()
         else:
@@ -155,6 +158,7 @@ def validate_client_id(client_id: int):
         st.session_state.error = f"Error during validation: {e}"
 
 
+# To check whether the key in bank and account ids are valid under the validated client id
 def validate_full_details(client_id: int, bank_id: int, account_id: int):
     try:
         response = requests.post(
@@ -174,14 +178,15 @@ def validate_full_details(client_id: int, bank_id: int, account_id: int):
         st.session_state.error = f"Error during validation: {e}"
 
 
+# Stream the response from CHAT_API
 def stream_chat_response(
     user_input: str, thread_id: str, client_id: int, bank_id: int, account_id: int
 ):
     try:
-        # Add user message to chat history
+        # Add user query to chat history
         st.session_state.chat_history.append(HumanMessage(content=user_input))
 
-        # Prepare payload with client context
+        # Prepare request payload for CHAT_API
         payload = {
             "query": user_input,
             "chat_history": encode_messages(st.session_state.chat_history),
@@ -212,7 +217,7 @@ def stream_chat_response(
                         # Yield the accumulated response for display
                         yield "".join(response_parts)
 
-                # Add AI response to chat history
+                # Add the response as AI Message to chat history
                 final_response = "".join(response_parts)
                 st.session_state.chat_history.append(AIMessage(content=final_response))
                 return final_response
@@ -228,7 +233,7 @@ def stream_chat_response(
         return error_message
 
 
-# UI Flow with minimal, clean design
+# UI flow with clean design
 st.title("Finance Assistant")
 
 # Progress indicator
@@ -242,7 +247,7 @@ else:
 if st.session_state.step != "chat":
     st.progress(progress / 3)
 
-# Step 1: Client ID Input
+# Step 1: Client id input
 if st.session_state.step == "client_input":
     st.markdown(
         '<p class="step-header">Step 1: Account Verification</p>',
@@ -260,7 +265,7 @@ if st.session_state.step == "client_input":
             with st.spinner("Verifying..."):
                 validate_client_id(client_id)
 
-# Step 2: Bank ID and Account ID Input
+# Step 2: Bank id and account id input
 elif st.session_state.step == "bank_account_input":
     st.markdown(
         '<p class="step-header">Step 2: Additional Information</p>',
@@ -269,7 +274,7 @@ elif st.session_state.step == "bank_account_input":
 
     st.info("Please provide your banking details")
 
-    # Display the client ID (read-only)
+    # Display the client id in read-only mode
     st.text_input("Client ID", value=str(st.session_state.client_id), disabled=True)
 
     # Bank and account inputs
@@ -286,9 +291,9 @@ elif st.session_state.step == "bank_account_input":
             st.session_state.account_id = account_id
             validate_full_details(st.session_state.client_id, bank_id, account_id)
 
-# Step 3: Chat Interface
+# Step 3: Chat interface
 elif st.session_state.step == "chat":
-    # Display account info in a subtle way
+    # Display the client id, bank id and account id for the particular chat session
     client_info = f"Client ID: {st.session_state.client_id} • Bank ID: {st.session_state.bank_id} • Account ID: {st.session_state.account_id}"
     st.markdown(
         f"<div style='color: #6B7280; font-size: 0.8rem; margin-bottom: 1rem;'>{client_info}</div>",
@@ -300,6 +305,7 @@ elif st.session_state.step == "chat":
         unsafe_allow_html=True,
     )
 
+    # Generate a unique thread id if not being initialized
     if not st.session_state.thread_id:
         st.session_state.thread_id = uuid.uuid4().hex[:8]
 
@@ -312,23 +318,23 @@ elif st.session_state.step == "chat":
             st.write(message["content"])
     st.markdown("</div>", unsafe_allow_html=True)
 
-    # Add initial welcome message if chat is empty
+    # Add an initial welcome message if chat is empty
     if not st.session_state.messages:
         welcome_msg = "How can I help you with your finances today?"
         with st.chat_message("assistant", avatar="💼"):
             st.write(welcome_msg)
         st.session_state.messages.append({"role": "assistant", "content": welcome_msg})
-        # Also add to dataclass-based chat history
+        # Also add to chat history
         st.session_state.chat_history.append(AIMessage(content=welcome_msg))
 
-    # Chat input
+    # User input
     user_input = st.chat_input("Ask about your finances...")
     if user_input:
         # Display user message
         with st.chat_message("user", avatar="👤"):
             st.write(user_input)
 
-        # Add user message to messages history (for display)
+        # Add user message to messages (for display)
         st.session_state.messages.append({"role": "user", "content": user_input})
 
         # Create a placeholder for the assistant's response
@@ -347,12 +353,12 @@ elif st.session_state.step == "chat":
                 message_placeholder.write(response_chunk)
                 full_response = response_chunk
 
-            # Add the assistant's response to display history
+            # Add the assistant's response to messages (for display)
             st.session_state.messages.append(
                 {"role": "assistant", "content": full_response}
             )
 
-# Show error if any, with minimal styling
+# If error occurred, show error
 if st.session_state.error:
     st.error(st.session_state.error)
     st.session_state.error = ""

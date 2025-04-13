@@ -3,14 +3,19 @@ from utils.models import load_llm
 from langchain_core.prompts import ChatPromptTemplate
 from typing import Dict, List, Optional, Any
 from langchain_core.runnables import RunnableConfig
+import logging
+
+logger = logging.getLogger(__name__)
 
 
+# To enable stream response
+# Remove 'config' param and change 'ainvoke' to 'invoke' for testing
 async def craft_response(
     llm,
     rewritten_query: str,
     database_results: List[Dict[str, Any]],
     config: RunnableConfig,
-) -> Optional[str]:
+) -> str:
     prompt = ChatPromptTemplate.from_messages(
         ("system", RESPONSE_CRAFTER_SYSTEM_PROMPT)
     )
@@ -23,29 +28,13 @@ async def craft_response(
         )
         return response.content
     except Exception as e:
-        print(f"Unexpected error occurred when executing 'craft_response': {e}")
-        return None
-
-
-# def craft_response(
-#     llm, rewritten_query: str, database_results: List[Dict[str, Any]]
-# ) -> Optional[str]:
-#     prompt = ChatPromptTemplate.from_messages(
-#         ("system", RESPONSE_CRAFTER_SYSTEM_PROMPT)
-#     )
-#     chain = prompt | llm
-#
-#     try:
-#         response = chain.invoke(
-#             {"rewritten_query": rewritten_query, "database_results": database_result}
-#         )
-#         return response.content
-#     except Exception as e:
-#         print(f"Unexpected error occurred when executing 'craft_response': {e}")
-#         return None
+        error_msg = f"Unexpected error occurred when executing 'craft_response': {e}"
+        logger.info(error_msg)
+        return error_msg
 
 
 if __name__ == "__main__":
+    # Test craft_response locally
     llm = load_llm()
     rewritten_query = "List the top 3 categories I saved most on July 2023"
     database_results = [

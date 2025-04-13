@@ -1,6 +1,5 @@
 import sqlite3
 from pathlib import Path
-import os
 import logging
 
 logger = logging.getLogger(__name__)
@@ -32,7 +31,9 @@ def get_table_schema(db_path: Path):
                 table_schema += f"- {col[1]}: {col[2]}\n"
 
         except sqlite3.DatabaseError as e:
-            logger.info(f"Database error occurred when executing 'get_table_schema': {e}")
+            logger.info(
+                f"Database error occurred when executing 'get_table_schema': {e}"
+            )
 
         finally:
             cursor.close()
@@ -43,7 +44,7 @@ def get_table_schema(db_path: Path):
         return "Database connection failed."
 
 
-# Execute sql query and get results from db
+# Execute sql query and get results from sqlite db
 def execute_sql_query(db_path: Path, query: str):
     conn, cursor = connect_db(db_path=db_path)
 
@@ -94,7 +95,7 @@ def get_client_with_single_bank_and_account_id(db_path: Path, client_id: int):
             bank_id, account_id = result[0], result[1]
             return {"status": "success", "bank_id": bank_id, "account_id": account_id}
         else:
-            # Client has multiple banks or accounts
+            # Client has multiple banks and/or accounts
             return {
                 "status": "conflict",
                 "message": f"Client ID-{client_id} has {result[2]} banks and {result[3]} accounts.",
@@ -190,7 +191,7 @@ if __name__ == "__main__":
     print(get_table_schema(db_path=db_path))
 
     # Test execute_sql_query
-    sql_query = "SELECT category, SUM(debit) AS total_savings FROM transactions WHERE client_id = 2 AND bank_id = 1 AND account_id = 1 AND transaction_date >= '2023-07-01' AND transaction_date < '2023-08-01' GROUP BY category ORDER BY total_savings DESC LIMIT 3;"
+    sql_query = "SELECT category, SUM(COALESCE(debit, 0)) AS total_savings FROM transactions WHERE client_id = 2 AND bank_id = 1 AND account_id = 1 AND transaction_date >= '2023-07-01' AND transaction_date < '2023-08-01' GROUP BY category ORDER BY total_savings DESC LIMIT 3;"
     print(execute_sql_query(db_path=db_path, query=sql_query))
 
     # Test get_client_with_single_bank_and_account_id

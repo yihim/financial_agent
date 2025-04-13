@@ -13,6 +13,7 @@ import uvicorn
 from langchain_community.callbacks.manager import get_openai_callback
 from time import perf_counter
 
+# Filter unwanted warnings
 warnings.filterwarnings("ignore")
 
 # Configure root logger
@@ -25,9 +26,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-# Function to decode messages
+# To decode the encoded messages from the request payload
 def decode_messages(json_str: str) -> List[Union[HumanMessage, AIMessage]]:
-    """Decode a JSON string back to a list of message objects"""
     data = json.loads(json_str)
     result = []
 
@@ -50,6 +50,7 @@ def decode_messages(json_str: str) -> List[Union[HumanMessage, AIMessage]]:
     return result
 
 
+# Create expected request payload to respond to user queries
 class AgentsRequest(BaseModel):
     query: str
     chat_history: str
@@ -59,21 +60,25 @@ class AgentsRequest(BaseModel):
     account_id: int
 
 
+# Initialize fastapi
 app = FastAPI(
     title="Financial Chatbot API",
     description="APIs for responding queries and check health",
     version="1.0.0",
 )
 
-
+# Initialize the graph
 graph = create_multi_agents()
 
 
 async def generate_stream(request: AgentsRequest) -> AsyncGenerator[str, None]:
+    # Create config to track the graph states
     config = {"configurable": {"thread_id": request.thread_id}}
 
+    # To convert the encoded messages back to expected format for the llm
     chat_history_decoded = decode_messages(request.chat_history)
 
+    # Initialize graph states
     state = {
         "messages": chat_history_decoded,
         "query": request.query,
@@ -94,8 +99,10 @@ async def generate_stream(request: AgentsRequest) -> AsyncGenerator[str, None]:
 
     start = perf_counter()
 
+    # Initialize openai callback function to track tokens and costs info
     with get_openai_callback() as cb:
 
+        # Stream the response
         async for msg, metadata in graph.astream(
             input=state, config=config, stream_mode="messages"
         ):
@@ -139,6 +146,7 @@ async def generate_stream(request: AgentsRequest) -> AsyncGenerator[str, None]:
     }
 
     if os.path.exists(file_path):
+        # If file exists, read and load it
         try:
             with open(file_path, "r", encoding="utf-8") as f:
                 logs = json.load(f)
@@ -147,6 +155,7 @@ async def generate_stream(request: AgentsRequest) -> AsyncGenerator[str, None]:
         except json.JSONDecodeError:
             logs = []
     else:
+        # Else, initialize a new log for the new log file
         logs = []
 
     logs.append(current_log)

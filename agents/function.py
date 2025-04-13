@@ -21,6 +21,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 
+# State management for the agents
 class AgentState(TypedDict):
     messages: List[Union[HumanMessage, AIMessage]]
     query: str
@@ -40,6 +41,7 @@ class AgentState(TypedDict):
 
 
 def create_multi_agents() -> StateGraph.compile:
+    # Initialize memory
     memory = MemorySaver()
 
     llm = load_llm()
@@ -61,11 +63,14 @@ def create_multi_agents() -> StateGraph.compile:
             llm=llm.with_structured_output(QueryRewriterOutput),
             query=state["query"],
             chat_history=state["messages"],
-            rewritten_query=state["rewritten_query"]
+            rewritten_query=state["rewritten_query"],
         )
         logger.info(f"Rewritten Query: {rewrite_result.rewritten_query}")
         logger.info(f"Rewritten Reason: {rewrite_result.reasoning}\n\n")
-        return {"rewritten_query": rewrite_result.rewritten_query, "rewritten_query_reason": rewrite_result.reasoning}
+        return {
+            "rewritten_query": rewrite_result.rewritten_query,
+            "rewritten_query_reason": rewrite_result.reasoning,
+        }
 
     def execute_plan_task(state: AgentState):
         action_plan = plan_task(
@@ -132,12 +137,12 @@ def create_multi_agents() -> StateGraph.compile:
         )
         return {"answer": response}
 
+    # Routing to either a conversational path or technical path based on the classified query
     def initial_routing(state: AgentState) -> Literal["rewrite", "conversational"]:
         if state["query_classified_result"] == "valid_transactional":
             return "rewrite"
         else:
             return "conversational"
-
 
     workflow = StateGraph(AgentState)
 
@@ -171,7 +176,7 @@ def create_multi_agents() -> StateGraph.compile:
 
 
 if __name__ == "__main__":
-    # Create graph visualization
+    # Create graph visualization image
     from langchain_core.runnables.graph import MermaidDrawMethod
     from IPython.display import Image
 

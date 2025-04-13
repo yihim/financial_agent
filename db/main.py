@@ -12,6 +12,7 @@ import logging
 import warnings
 import sys
 
+# Filter unwanted warnings
 warnings.filterwarnings("ignore")
 
 # Configure root logger
@@ -21,22 +22,26 @@ logging.basicConfig(
     handlers=[logging.StreamHandler(sys.stdout)],
 )
 
+# Initialize fastapi
 app = FastAPI(
     title="Transactions Database API",
     description="APIs for executing SQL queries, get bank and account ids, validify ids and check health",
     version="1.0.0",
 )
 
+# Initialize sqlite db path
 ROOT_DIR = Path(__file__).resolve().parent
 DB_PATH = ROOT_DIR / "transactions.db"
 
 
+# Create expected request payload to validify user info
 class ValidifyIDRequest(BaseModel):
     client_id: int
     bank_id: int = None
     account_id: int = None
 
 
+# Create expected request payload to execute sql query
 class ExecuteQueryRequest(BaseModel):
     sql_query: str
 

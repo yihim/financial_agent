@@ -6,8 +6,12 @@ from typing import List, Optional
 from langchain_core.prompts import ChatPromptTemplate
 from datetime import datetime
 from zoneinfo import ZoneInfo
+import logging
+
+logger = logging.getLogger(__name__)
 
 
+# Created structured output for the subsequent tasks
 class SubTask(BaseModel):
     step: str = Field(..., description="The number of step to be taken.")
     operation: str = Field(
@@ -20,6 +24,8 @@ class SubTask(BaseModel):
     )
 
 
+# Create a structured output for task_planner,
+# making it clearer for the llm to response expectedly and easier to access response
 class TaskPlannerOutput(BaseModel):
     query_understanding: str = Field(
         ...,
@@ -36,7 +42,7 @@ class TaskPlannerOutput(BaseModel):
 
 def plan_task(
     llm, rewritten_query: str, client_id: int, bank_id: int, account_id: int
-) -> Optional[TaskPlannerOutput]:
+) -> Optional[TaskPlannerOutput, str]:
     prompt = ChatPromptTemplate.from_messages(("system", TASK_PLANNER_SYSTEM_PROMPT))
     chain = prompt | llm
 
@@ -55,11 +61,13 @@ def plan_task(
         )
         return response
     except Exception as e:
-        print(f"Unexpected error occurred when executing 'plan_task': {e}")
-        return None
+        error_msg = f"Unexpected error occurred when executing 'plan_task': {e}"
+        logger.info(error_msg)
+        return error_msg
 
 
 if __name__ == "__main__":
+    # Test plan_task locally
     llm = load_llm()
     llm = llm.with_structured_output(TaskPlannerOutput)
     client_id = 2

@@ -5,8 +5,13 @@ from typing import List, Union
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_openai import ChatOpenAI
 from langchain_core.runnables import RunnableConfig
+import logging
+
+logger = logging.getLogger(__name__)
 
 
+# To enable stream response
+# Remove 'config' param and change 'ainvoke' to 'invoke' for testing
 async def respond_conversational(
     llm: ChatOpenAI,
     query: str,
@@ -32,11 +37,15 @@ async def respond_conversational(
         )
         return response.content
     except Exception as e:
-        print(f"Unexpected error occurred when executing 'respond_conversational': {e}")
-        return str(e)
+        error_msg = (
+            f"Unexpected error occurred when executing 'respond_conversational': {e}"
+        )
+        logger.info(error_msg)
+        return error_msg
 
 
 if __name__ == "__main__":
+    # Test respond_conversational locally
     llm = load_llm()
     query = "List my transactions for that thing I bought"
     classified_result = "ambiguous"
