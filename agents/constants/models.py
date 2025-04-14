@@ -101,8 +101,16 @@ Table Schema: {schema}
    - Examples:
      - "What was my spending in 2023?" followed by "How about on groceries?" → "What was my spending on groceries in 2023?"
      - "Show my transactions for January" followed by "What about deposits?" → "Show my deposit transactions for January"
+     
+5. TYPO KEYWORDS:
+    - Identify misspelled keywords in the user query that likely refer to known brands, products, or common terms
+    - Correct identified typos to the closest matching noun keywords based on spelling similarity and context
+    - Focus on correcting proper nouns, brand names, product names, and common search terms
+    - Consider both spelling errors and phonetic similarities (e.g., "ubre" → "uber", "adibas" → "adidas", "nikke" → "nike")
+    - Preserve the original word if the correction confidence is low or ambiguous
+    - Apply corrections only when necessary to improve query clarity and search accuracy
 
-5. REMEMBER:
+6. REMEMBER:
    - Your goal is clarity and completeness
    - Every rewritten query should stand on its own without requiring additional context
    - Do not introduce assumptions that significantly change the user's intent
