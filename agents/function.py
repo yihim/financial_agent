@@ -105,7 +105,7 @@ def create_multi_agents() -> StateGraph.compile:
         logger.info(f"SQL Query: {sql_query.sql_query}\n\n")
         return {"sql_query": sql_query.sql_query}
 
-    def execute_validate_sql_query(state: AgentState):
+    def execute_sql_query_in_db(state: AgentState):
         db_result = []
         db_response = requests.post(
             url=DB_EXECUTE_SQL_QUERY_URL, json={"sql_query": state["sql_query"]}
@@ -151,7 +151,7 @@ def create_multi_agents() -> StateGraph.compile:
     workflow.add_node("query_rewriter", execute_rewrite_query)
     workflow.add_node("task_planner", execute_plan_task)
     workflow.add_node("sql_query_generator", execute_generate_sql_query)
-    workflow.add_node("sql_query_validator", execute_validate_sql_query)
+    workflow.add_node("sql_query_executor", execute_sql_query_in_db)
     workflow.add_node("response_crafter", execute_craft_response)
 
     workflow.add_conditional_edges(
@@ -162,8 +162,8 @@ def create_multi_agents() -> StateGraph.compile:
 
     workflow.add_edge("query_rewriter", "task_planner")
     workflow.add_edge("task_planner", "sql_query_generator")
-    workflow.add_edge("sql_query_generator", "sql_query_validator")
-    workflow.add_edge("sql_query_validator", "response_crafter")
+    workflow.add_edge("sql_query_generator", "sql_query_executor")
+    workflow.add_edge("sql_query_executor", "response_crafter")
 
     workflow.add_edge("conversational_responder", END)
     workflow.add_edge("response_crafter", END)
@@ -188,7 +188,7 @@ if __name__ == "__main__":
             )
         )
 
-        with open("graph_visualization.png", "wb") as f:
+        with open("./graph_visualization.png", "wb") as f:
             f.write(img.data)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"Unexpected error occurred: {e}")
