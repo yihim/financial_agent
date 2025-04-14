@@ -3,8 +3,6 @@ from constants.models import SQL_QUERY_GENERATOR_SYSTEM_PROMPT
 from constants.db import DB_TABLE_SCHEMA
 from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
-from pathlib import Path
-import os
 from engines.task_planner import SubTask
 from typing import List, Union
 from datetime import datetime
