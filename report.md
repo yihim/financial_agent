@@ -4,9 +4,10 @@
 1. Ensure you have [Docker Desktop](https://www.docker.com/products/docker-desktop/) installed on your machine.
 2. Open the **financial_agent** folder
 3. Create a `.env` file with `OPENAI_API_KEY=your_openai_api_key`
-4. Open PowerShell (Windows), change the directory to the **financial_agent** folder
-5. Execute `docker-compose --build -d` command and wait until all the installations finish
-6. Visit [http://localhost:8090](http://localhost:8090) to begin
+4. Launch the **Docker Desktop App**
+5. Open PowerShell (Windows), change the directory to the **financial_agent** folder
+6. Execute `docker-compose --build -d` command and wait until all the installations finish
+7. Visit [http://localhost:8090](http://localhost:8090) to begin
 
 ## Example Use Cases of Using the System
 1. Client with single bank and account
