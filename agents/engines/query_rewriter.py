@@ -4,7 +4,7 @@ from constants.db import DB_TABLE_SCHEMA
 from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.messages import HumanMessage, AIMessage
-from typing import List, Union, Optional
+from typing import List, Union
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import logging
@@ -28,7 +28,7 @@ def rewrite_query(
     query: str,
     chat_history: List[Union[HumanMessage, AIMessage]],
     rewritten_query: str,
-) -> Optional[QueryRewriterOutput, str]:
+) -> Union[QueryRewriterOutput, str]:
     prompt = ChatPromptTemplate.from_messages(("system", QUERY_REWRITER_SYSTEM_PROMPT))
     chain = prompt | llm
 

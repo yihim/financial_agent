@@ -6,7 +6,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from pathlib import Path
 import os
 from engines.task_planner import SubTask
-from typing import List, Optional
+from typing import List, Union
 from datetime import datetime
 from zoneinfo import ZoneInfo
 import logging
@@ -29,7 +29,7 @@ def generate_sql_query(
     client_id: int,
     bank_id: int,
     account_id: int,
-) -> Optional[SqlQueryGeneratorOutput, str]:
+) -> Union[SqlQueryGeneratorOutput, str]:
     prompt = ChatPromptTemplate.from_messages(
         ("system", SQL_QUERY_GENERATOR_SYSTEM_PROMPT)
     )

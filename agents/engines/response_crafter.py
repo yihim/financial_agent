@@ -1,7 +1,7 @@
 from constants.models import RESPONSE_CRAFTER_SYSTEM_PROMPT
 from utils.models import load_llm
 from langchain_core.prompts import ChatPromptTemplate
-from typing import Dict, List, Optional, Any
+from typing import Dict, List, Any
 from langchain_core.runnables import RunnableConfig
 import logging
 

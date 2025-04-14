@@ -2,7 +2,7 @@ from utils.models import load_llm
 from constants.models import TASK_PLANNER_SYSTEM_PROMPT
 from constants.db import DB_TABLE_SCHEMA
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import List, Union
 from langchain_core.prompts import ChatPromptTemplate
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -42,7 +42,7 @@ class TaskPlannerOutput(BaseModel):
 
 def plan_task(
     llm, rewritten_query: str, client_id: int, bank_id: int, account_id: int
-) -> Optional[TaskPlannerOutput, str]:
+) -> Union[TaskPlannerOutput, str]:
     prompt = ChatPromptTemplate.from_messages(("system", TASK_PLANNER_SYSTEM_PROMPT))
     chain = prompt | llm
 

@@ -3,7 +3,7 @@ from constants.models import QUERY_ANALYZER_SYSTEM_PROMPT
 from constants.db import DB_TABLE_SCHEMA
 from pydantic import BaseModel, Field
 from langchain_core.prompts import ChatPromptTemplate
-from typing import Literal, List, Union, Optional
+from typing import Literal, List, Union
 from langchain_core.messages import HumanMessage, AIMessage
 import logging
 
@@ -23,7 +23,7 @@ class QueryAnalyzerOutput(BaseModel):
 
 def analyze_query(
     llm, query: str, chat_history: List[Union[HumanMessage, AIMessage]]
-) -> Optional[QueryAnalyzerOutput, str]:
+) -> Union[QueryAnalyzerOutput, str]:
     prompt = ChatPromptTemplate.from_messages(("system", QUERY_ANALYZER_SYSTEM_PROMPT))
 
     chain = prompt | llm
