@@ -73,7 +73,7 @@ graph = create_multi_agents()
 
 async def generate_stream(request: AgentsRequest) -> AsyncGenerator[str, None]:
     # Create config to track the graph states
-    config = {"configurable": {"thread_id": request.thread_id}}
+    config = {"configurable": {"thread_id": request.thread_id, "stream": True}}
 
     # To convert the encoded messages back to expected format for the llm
     chat_history_decoded = decode_messages(request.chat_history)

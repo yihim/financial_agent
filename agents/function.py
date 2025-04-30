@@ -1,4 +1,4 @@
-from utils.models import load_llm
+from utils.models import load_llm_with_cache, load_llm_with_stream
 from constants.db import DB_EXECUTE_SQL_QUERY_URL
 from engines.query_analyzer import QueryAnalyzerOutput, analyze_query
 from engines.query_rewriter import QueryRewriterOutput, rewrite_query
@@ -44,11 +44,12 @@ def create_multi_agents() -> StateGraph.compile:
     # Initialize memory
     memory = MemorySaver()
 
-    llm = load_llm()
+    llm_stream = load_llm_with_stream()
+    llm_cache = load_llm_with_cache()
 
     def execute_analyze_query(state: AgentState):
         analyze_result = analyze_query(
-            llm=llm.with_structured_output(QueryAnalyzerOutput),
+            llm=llm_cache.with_structured_output(QueryAnalyzerOutput),
             query=state["query"],
             chat_history=state["messages"],
         )
@@ -60,7 +61,7 @@ def create_multi_agents() -> StateGraph.compile:
 
     def execute_rewrite_query(state: AgentState):
         rewrite_result = rewrite_query(
-            llm=llm.with_structured_output(QueryRewriterOutput),
+            llm=llm_cache.with_structured_output(QueryRewriterOutput),
             query=state["query"],
             chat_history=state["messages"],
             rewritten_query=state["rewritten_query"],
@@ -74,7 +75,7 @@ def create_multi_agents() -> StateGraph.compile:
 
     def execute_plan_task(state: AgentState):
         action_plan = plan_task(
-            llm=llm.with_structured_output(TaskPlannerOutput),
+            llm=llm_cache.with_structured_output(TaskPlannerOutput),
             rewritten_query=state["rewritten_query"],
             client_id=state["client_id"],
             bank_id=state["bank_id"],
@@ -93,7 +94,7 @@ def create_multi_agents() -> StateGraph.compile:
 
     def execute_generate_sql_query(state: AgentState):
         sql_query = generate_sql_query(
-            llm=llm.with_structured_output(SqlQueryGeneratorOutput),
+            llm=llm_cache.with_structured_output(SqlQueryGeneratorOutput),
             rewritten_query=state["rewritten_query"],
             action_plan=state["action_plan"],
             query_understanding=state["query_understanding"],
@@ -119,7 +120,7 @@ def create_multi_agents() -> StateGraph.compile:
 
     async def execute_craft_response(state: AgentState, config: RunnableConfig):
         answer = await craft_response(
-            llm=llm,
+            llm=llm_stream,
             rewritten_query=state["rewritten_query"],
             database_results=state["database_results"],
             config=config,
@@ -128,7 +129,7 @@ def create_multi_agents() -> StateGraph.compile:
 
     async def execute_respond_conversational(state: AgentState, config: RunnableConfig):
         response = await respond_conversational(
-            llm=llm,
+            llm=llm_stream,
             query=state["query"],
             classified_result=state["query_classified_result"],
             classified_reason=state["query_classified_reason"],
